@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  # Database Service (PostgreSQL)
+  db:
+    image: postgres:15-alpine
+    container_name: scalp_analysis_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: scalp_analysis
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # FastAPI Backend Service
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: scalp_analysis_backend
+    restart: always
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/scalp_analysis
+      - SECRET_KEY=clinical_ai_super_secret_key_83a17d32
+    ports:
+      - "8000:8000"
+    volumes:
+      - backend_uploads:/app/static/uploads
+      - backend_reports:/app/static/reports
+    depends_on:
+      - db
+
+  # React Frontend Service (Served via Nginx)
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: scalp_analysis_frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  backend_uploads:
+  backend_reports:
